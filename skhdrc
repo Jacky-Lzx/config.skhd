@@ -1,0 +1,228 @@
+# vim:foldmethod=marker
+
+# ################################################################ #
+# THE FOLLOWING IS AN EXPLANATION OF THE GRAMMAR THAT SKHD PARSES. #
+# FOR SIMPLE EXAMPLE MAPPINGS LOOK FURTHER DOWN THIS FILE..        #
+# ################################################################ #
+# {{{
+# A list of all built-in modifier and literal keywords can be found at https://github.com/koekeishiya/skhd/issues/1
+#
+# A hotkey is written according to the following rules:
+#
+#   hotkey       = <mode> '<' <action> | <action>
+#
+#   mode         = 'name of mode' | <mode> ',' <mode>
+#
+#   action       = <keysym> '[' <proc_map_lst> ']' | <keysym> '->' '[' <proc_map_lst> ']'
+#                  <keysym> ':' <command>          | <keysym> '->' ':' <command>
+#                  <keysym> ';' <mode>             | <keysym> '->' ';' <mode>
+#
+#   keysym       = <mod> '-' <key> | <key>
+#
+#   mod          = 'modifier keyword' | <mod> '+' <mod>
+#
+#   key          = <literal> | <keycode>
+#
+#   literal      = 'single letter or built-in keyword'
+#
+#   keycode      = 'apple keyboard kVK_<Key> values (0x3C)'
+#
+#   proc_map_lst = * <proc_map>
+#
+#   proc_map     = <string> ':' <command> | <string>     '~' |
+#                  '*'      ':' <command> | '*'          '~'
+#
+#   string       = '"' 'sequence of characters' '"'
+#
+#   command      = command is executed through '$SHELL -c' and
+#                  follows valid shell syntax. if the $SHELL environment
+#                  variable is not set, it will default to '/bin/bash'.
+#                  when bash is used, the ';' delimiter can be specified
+#                  to chain commands.
+#
+#                  to allow a command to extend into multiple lines,
+#                  prepend '\' at the end of the previous line.
+#
+#                  an EOL character signifies the end of the bind.
+#
+#   ->           = keypress is not consumed by skhd
+#
+#   *            = matches every application not specified in <proc_map_lst>
+#
+#   ~            = application is unbound and keypress is forwarded per usual, when specified in a <proc_map>
+#
+# A mode is declared according to the following rules:
+#
+#   mode_decl = '::' <name> '@' ':' <command> | '::' <name> ':' <command> |
+#               '::' <name> '@'               | '::' <name>
+#
+#   name      = desired name for this mode,
+#
+#   @         = capture keypresses regardless of being bound to an action
+#
+#   command   = command is executed through '$SHELL -c' and
+#               follows valid shell syntax. if the $SHELL environment
+#               variable is not set, it will default to '/bin/bash'.
+#               when bash is used, the ';' delimiter can be specified
+#               to chain commands.
+#
+#               to allow a command to extend into multiple lines,
+#               prepend '\' at the end of the previous line.
+#
+#               an EOL character signifies the end of the bind.
+# }}}
+
+shift + cmd - d : open ~/Downloads
+shift + alt - d : open ~/Downloads
+
+shift + alt - return : open -n -a "Kitty"
+# shift + alt - g : open -n -a "Google Chrome"
+shift + alt - m : open -a "Mail"
+shift + alt - c : ~/.config/scripts/change_background.sh # Set wallpaper
+
+cmd - m : echo "" > /dev/null
+cmd + alt - h : echo "" > /dev/null
+
+# Yabai {{{
+
+# Moves focus between spaces
+shift + alt - 1 : yabai -m space --focus 1
+shift + alt - 2 : yabai -m space --focus 2
+shift + alt - 3 : yabai -m space --focus 3
+shift + alt - 4 : yabai -m space --focus 4
+shift + alt - 5 : yabai -m space --focus 5
+shift + alt - 6 : yabai -m space --focus 6
+shift + alt - 7 : yabai -m space --focus 7
+shift + alt - 8 : yabai -m space --focus 8
+shift + alt - 9 : yabai -m space --focus 9
+
+shift + cmd - 1 : yabai -m space --focus 1
+shift + cmd - 2 : yabai -m space --focus 2
+shift + cmd - 3 : yabai -m space --focus 3
+shift + cmd - 4 : yabai -m space --focus 4
+shift + cmd - 5 : yabai -m space --focus 5
+shift + cmd - 6 : yabai -m space --focus 6
+shift + cmd - 7 : yabai -m space --focus 7
+shift + cmd - 8 : yabai -m space --focus 8
+shift + cmd - 9 : yabai -m space --focus 9
+
+# Close window
+shift + alt - q : yabai -m window --close && sketchybar --trigger space_change
+shift + cmd - q : yabai -m window --close && sketchybar --trigger space_change
+
+# Close current space
+shift + ctrl + alt - q : index="$(yabai -m query --spaces --space | jq .index)" && \
+          yabai -m space --destroy && \
+          yabai -m space --focus "${index}" || yabai -m space --focus last
+
+# Close all empty spaces
+shift + ctrl + alt - x : yabai -m query --spaces | \
+     jq -re 'map(select(."is-native-fullscreen" == false)) | length > 1' \
+     && yabai -m query --spaces | \
+          jq -re 'map(select(."windows" == [] and ."has-focus" == false).index) | reverse | .[] ' | \
+          xargs -I % sh -c 'yabai -m space % --destroy' \
+     && sketchybar --trigger space_change
+
+# Float / unfloat window and center on screen
+shift + alt - t : yabai -m window --toggle float;\
+          yabai -m window --grid 10:10:1:1:8:8
+
+shift + alt - r : yabai -m window --grid 10:10:1:1:8:8
+
+# Create a new space, move window and follow focus
+shift + alt - n : if [ "$(yabai -m query --windows --space "$(yabai -m query --displays --display | jq '.spaces[-1]')" | jq 'length')" -eq 0 ]; then \
+                    index="$(yabai -m query --displays --display | jq '.spaces[-1]')"; \
+                  else \
+                    yabai -m space --create; \
+                    index="$(yabai -m query --displays --display | jq '.spaces[-1]')"; \
+                  fi && \
+                  yabai -m window --space "${index}" && \
+                  yabai -m space --focus "${index}" && \
+                  ~/.config/scripts/change_background.sh
+
+# Focus window
+shift + cmd - h : yabai -m window --focus west
+shift + cmd - j : yabai -m window --focus south
+shift + cmd - k : yabai -m window --focus north
+shift + cmd - l : yabai -m window --focus east
+
+# Cycle through all windows sorted by: coordinates -> space index -> display index
+# shift + cmd - u : yabai -m window --focus "$(yabai -m query --windows | jq -re "sort_by(.display, .space, .frame.x, .frame.y, .id) | map(select(.\"is-visible\" == true and .role != \"AXUnknown\")) | reverse | nth(index(map(select(.\"has-focus\" == true))) - 1).id")"
+# cycle through all visible windows sorted by: coordinates -> display index
+# shift + cmd - o : yabai -m window --focus "$(yabai -m query --windows | jq -re "sort_by(.display, .frame.x, .frame.y, .id) | map(select(.\"is-visible\" == true and .role != \"AXUnknown\")) | reverse | nth(index(map(select(.\"has-focus\" == true))) - 1).id")"
+
+shift + cmd - i : yabai -m window --focus largest
+
+# Balance size of windows
+shift + alt - 0 : yabai -m space --balance
+
+# Switch spaces
+shift + alt - i : yabai -m space --focus recent
+shift + alt - h : yabai -m space --focus prev
+shift + alt - l : yabai -m space --focus next
+
+# Switch displays
+shift + alt - j : yabai -m display --focus next || yabai -m display --focus first
+shift + alt - k : yabai -m display --focus prev || yabai -m display --focus last
+shift + ctrl + alt - h : yabai -m display --focus prev || yabai -m display --focus last
+shift + ctrl + alt - l : yabai -m display --focus next || yabai -m display --focus first
+
+# Move spaces between displays
+shift + ctrl + alt - o : yabai -m space --display next || yabai -m space --display first && sketchybar --trigger space_windows_change
+shift + ctrl + alt - u : yabai -m space --display prev || yabai -m space --display last && sketchybar --trigger space_windows_change
+
+# Move windows between spaces
+shift + alt - u : yabai -m window --space prev && yabai -m space --focus prev && sketchybar --trigger space_change
+shift + alt - o : yabai -m window --space next && yabai -m space --focus next && sketchybar --trigger space_change
+
+# Send window to monitor and follow focus
+shift + ctrl + alt - 1  : yabai -m window --space 1; yabai -m space --focus 1
+shift + ctrl + alt - 2  : yabai -m window --space 2; yabai -m space --focus 2
+shift + ctrl + alt - 3  : yabai -m window --space 3; yabai -m space --focus 3
+shift + ctrl + alt - 4  : yabai -m window --space 4; yabai -m space --focus 4
+shift + ctrl + alt - 5  : yabai -m window --space 5; yabai -m space --focus 5
+shift + ctrl + alt - 6  : yabai -m window --space 6; yabai -m space --focus 6
+shift + ctrl + alt - 7  : yabai -m window --space 7; yabai -m space --focus 7
+shift + ctrl + alt - 8  : yabai -m window --space 8; yabai -m space --focus 8
+
+# Swap spaces
+# Bind , and .
+shift + ctrl + alt - 0x2B  : yabai -m space --move prev && sketchybar --trigger space_windows_change --trigger space_change
+shift + ctrl + alt - 0x2F  : yabai -m space --move next && sketchybar --trigger space_windows_change --trigger space_change
+
+# Toggle window zoom
+shift + alt - f : yabai -m window --toggle zoom-fullscreen
+
+shift + ctrl + alt - i  : yabai -m window --sub-layer above
+shift + ctrl + alt - k  : yabai -m window --sub-layer below
+
+# move floating window
+# shift + ctrl - a : yabai -m window --move rel:-20:0
+# shift + ctrl - s : yabai -m window --move rel:0:20
+
+# increase window size
+# shift + alt - a : yabai -m window --resize left:-20:0
+# shift + alt - w : yabai -m window --resize top:0:-20
+
+# decrease window size
+# shift + cmd - s : yabai -m window --resize bottom:0:-20
+# shift + cmd - w : yabai -m window --resize top:0:20
+
+# set insertion point in focused container
+# ctrl + alt - h : yabai -m window --insert west
+
+# shift + alt - s : yabai -m space --create; yabai -m space --focus last
+
+# toggle window split type
+# alt - e : yabai -m window --toggle split
+
+# float / unfloat window and center on screen
+# alt - t : yabai -m window --toggle float --grid 4:4:1:1:2:2
+
+# toggle sticky(+float), topmost, picture-in-picture
+# alt - p : yabai -m window --toggle sticky --toggle topmost --toggle pip
+
+# toggle window border
+# shift + cmd - b : yabai -m window --toggle border
+
+# }}}
