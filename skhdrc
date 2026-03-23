@@ -107,8 +107,8 @@ shift + cmd - 8 : yabai -m space --focus 8
 shift + cmd - 9 : yabai -m space --focus 9
 
 # Close window
-shift + alt - q : yabai -m window --close && sketchybar --trigger space_change
-shift + cmd - q : yabai -m window --close && sketchybar --trigger space_change
+shift + alt - q : yabai -m window --close && sketchybar --trigger space_change && yabai -m window --focus largest
+shift + cmd - q : yabai -m window --close && sketchybar --trigger space_change && yabai -m window --focus largest
 
 # Close current space
 shift + ctrl + alt - q : index="$(yabai -m query --spaces --space | jq .index)" && \
