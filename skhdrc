@@ -225,7 +225,7 @@ shift + ctrl + alt - k  : yabai -m window --sub-layer below
 # toggle window border
 # shift + cmd - b : yabai -m window --toggle border
 
-shift + alt - e : kitty --start-as=normal --title="nvim_input" ~/.config/shell_scripts/nvim_input.sh
-shift + ctrl + alt - e : kitty --start-as=normal --title="nvim_edit" ~/.config/shell_scripts/nvim_edit.sh
+shift + ctrl + alt - e : kitty --start-as=normal --title="nvim_input" ~/.config/shell_scripts/nvim_input.sh
+shift + alt - e : kitty --start-as=normal --title="nvim_edit" ~/.config/shell_scripts/nvim_edit.sh
 
 # }}}
